@@ -1,0 +1,55 @@
+body.login-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0, 112, 192, 0.12), transparent),
+    #f1f5f9;
+  padding: 1.5rem;
+}
+
+.login-card {
+  width: min(420px, 100%);
+}
+
+.login-brand {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.login-logo {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 12px;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+}
+
+.login-brand-title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.login-brand-venture {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.login-error {
+  color: var(--color-danger);
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
+}
+
+.login-back {
+  display: inline-block;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+}

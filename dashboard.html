@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard · FNS Cashline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
+    />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script defer src="js/env.js"></script>
+    <script defer src="js/utils.js"></script>
+    <script defer src="js/appConfig.js"></script>
+    <script defer src="js/supabase.js"></script>
+    <script defer src="js/auth.js"></script>
+    <script defer src="js/dashboard.js"></script>
+  </head>
+  <body>
+    <header id="app-topbar" class="no-print"></header>
+
+    <main class="page">
+      <div class="container page-grid">
+        <section class="kpi-grid">
+          <article class="kpi-card">
+            <span class="kpi-label">Cash deployed</span>
+            <strong id="kpi-deployed">—</strong>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-label">Loaded this month</span>
+            <strong id="kpi-loaded-month">—</strong>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-label">Commission this month</span>
+            <strong id="kpi-commission-month">—</strong>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-label">Transactions this month</span>
+            <strong id="kpi-transactions">—</strong>
+          </article>
+        </section>
+
+        <div class="split-grid">
+          <section class="card">
+            <h2 class="section-title">Recent cash loads</h2>
+            <div id="recent-loads"></div>
+            <p><a href="cash-loads.html">Manage cash →</a></p>
+          </section>
+          <section class="card">
+            <h2 class="section-title">Recent commissions</h2>
+            <div id="recent-commissions"></div>
+            <p><a href="commissions.html">Manage commission →</a></p>
+          </section>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

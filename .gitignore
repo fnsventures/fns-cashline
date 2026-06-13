@@ -1,0 +1,19 @@
+# Environment configuration (contains secrets at runtime)
+js/env.js
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor directories
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Supabase
+supabase/.temp/
+supabase/.branches/
