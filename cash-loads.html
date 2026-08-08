@@ -2,89 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Cash loads · FNS Cashline</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
-    />
-    <link rel="stylesheet" href="css/base.css" />
-    <link rel="stylesheet" href="css/app.css" />
-    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script defer src="js/env.js"></script>
-    <script defer src="js/utils.js"></script>
-    <script defer src="js/appConfig.js"></script>
-    <script defer src="js/supabase.js"></script>
-    <script defer src="js/auth.js"></script>
-    <script defer src="js/cash-loads.js"></script>
+    <meta http-equiv="refresh" content="0; url=cash.html" />
+    <title>Redirecting…</title>
+    <script>location.replace("cash.html");</script>
   </head>
   <body>
-    <header id="app-topbar" class="no-print"></header>
-
-    <main class="page">
-      <div class="container page-grid">
-        <div class="split-grid">
-          <section class="card">
-            <h2 class="section-title">Record cash load</h2>
-            <p class="muted">Money you put into the ATM cassette.</p>
-            <form id="load-form" class="form">
-              <div class="form-grid">
-                <div>
-                  <label for="load_date">Date</label>
-                  <input id="load_date" name="load_date" type="date" required />
-                </div>
-                <div>
-                  <label for="amount">Amount (₹)</label>
-                  <input id="amount" name="amount" type="number" min="1" step="0.01" required />
-                </div>
-                <div>
-                  <label for="mode">Mode</label>
-                  <select id="mode" name="mode"></select>
-                </div>
-              </div>
-              <label for="reference">Bank / UTR reference</label>
-              <input id="reference" name="reference" type="text" placeholder="Optional" />
-              <label for="notes">Notes</label>
-              <textarea id="notes" name="notes" rows="2" placeholder="Optional"></textarea>
-              <button type="submit">Save load</button>
-            </form>
-          </section>
-
-          <section class="card">
-            <h2 class="section-title">Record cash settlement</h2>
-            <p class="muted">Unused cash swept back by the franchise partner.</p>
-            <form id="settlement-form" class="form">
-              <div class="form-grid">
-                <div>
-                  <label for="settlement_date">Date</label>
-                  <input id="settlement_date" name="settlement_date" type="date" required />
-                </div>
-                <div>
-                  <label for="settlement_amount">Amount (₹)</label>
-                  <input id="settlement_amount" name="amount" type="number" min="1" step="0.01" required />
-                </div>
-              </div>
-              <label for="settlement_reference">Reference</label>
-              <input id="settlement_reference" name="reference" type="text" placeholder="UTR / settlement ID" />
-              <label for="settlement_notes">Notes</label>
-              <textarea id="settlement_notes" name="notes" rows="2" placeholder="Optional"></textarea>
-              <button type="submit">Save settlement</button>
-            </form>
-          </section>
-        </div>
-
-        <section class="card">
-          <h2 class="section-title">Cash loads</h2>
-          <div id="loads-table"></div>
-        </section>
-
-        <section class="card">
-          <h2 class="section-title">Cash settlements</h2>
-          <div id="settlements-table"></div>
-        </section>
-      </div>
-    </main>
+    <p><a href="cash.html">Go to Cash</a></p>
   </body>
 </html>

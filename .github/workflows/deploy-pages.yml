@@ -1,0 +1,152 @@
+name: Deploy
+
+run-name: >-
+  ${{
+    github.event_name == 'workflow_dispatch' &&
+      format('Manual · {0} · {1}', inputs.target, inputs.ref || github.ref_name) ||
+    format('Deploy {0}', github.ref_name == 'staging' && 'staging' || 'prod')
+  }}
+
+on:
+  push:
+    branches:
+      - staging
+      - main
+  workflow_dispatch:
+    inputs:
+      target:
+        required: true
+        type: choice
+        options: [staging, prod]
+        description: Environment to deploy to
+      ref:
+        required: false
+        type: string
+        description: Branch, tag, or commit SHA (default — branch selected below when starting the run)
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    name: >-
+      ${{
+        (github.event_name == 'workflow_dispatch' && inputs.target == 'staging' ||
+          github.ref_name == 'staging') && 'Staging' || 'Prod'
+      }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.target || (github.ref_name == 'staging' && 'staging' || 'prod') }}
+    env:
+      TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.target || (github.ref_name == 'staging' && 'staging' || 'prod') }}
+      REF: ${{ github.event_name == 'workflow_dispatch' && (inputs.ref || github.ref) || github.sha }}
+    steps:
+      - name: >-
+          ${{ env.TARGET == 'staging' && 'Scout' || 'Pull' }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.REF }}
+          fetch-depth: 1
+
+      - name: >-
+          ${{ env.TARGET == 'staging' && 'Patch' || 'Compile' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          target="$TARGET"
+
+          case "$target" in
+            staging|prod) ;;
+            *) echo "invalid target: $target" >&2; exit 1 ;;
+          esac
+
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
+            echo "Missing SUPABASE_URL or SUPABASE_ANON_KEY for environment '$target'" >&2
+            exit 1
+          fi
+
+          cat > js/env.js <<EOF
+          window.__APP_CONFIG__ = {
+            SUPABASE_URL: "${SUPABASE_URL}",
+            SUPABASE_ANON_KEY: "${SUPABASE_ANON_KEY}",
+            APP_ENV: "${target}",
+          };
+          EOF
+
+          [ "$target" = "staging" ] && rm -f CNAME
+
+          mkdir -p _site
+          git fetch origin gh-pages --depth=1 2>/dev/null || true
+          if git rev-parse origin/gh-pages >/dev/null 2>&1; then
+            git archive origin/gh-pages | tar -x -C _site
+          fi
+
+          touch _site/.nojekyll
+          excludes=(
+            --exclude _site
+            --exclude .git
+            --exclude .github
+            --exclude supabase
+            --exclude scripts
+            --exclude docs
+            --exclude node_modules
+            --exclude package.json
+            --exclude package-lock.json
+          )
+
+          if [ "$target" = "staging" ]; then
+            mkdir -p _site/staging
+            rsync -a "${excludes[@]}" ./ _site/staging/
+          else
+            staging_backup=""
+            if [ -d _site/staging ]; then
+              staging_backup="$(mktemp -d)"
+              mv _site/staging "$staging_backup/staging"
+            fi
+            rsync -a "${excludes[@]}" ./ _site/
+            if [ -n "$staging_backup" ]; then
+              mv "$staging_backup/staging" _site/staging
+              rmdir "$staging_backup"
+            fi
+          fi
+
+      - name: >-
+          ${{ env.TARGET == 'staging' && 'Preview' || 'Release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          target="$TARGET"
+          commit_sha="$(git rev-parse HEAD)"
+
+          cd _site
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          # js/env.js is gitignored in the source repo but must ship on Pages.
+          # Always force-add both paths when present so a staging-only deploy cannot
+          # drop prod js/env.js (and a prod deploy cannot drop staging/js/env.js).
+          for env_path in js/env.js staging/js/env.js; do
+            [ -f "$env_path" ] && git add -f "$env_path"
+          done
+          if git diff --cached --quiet; then
+            echo "gh-pages unchanged, skipping push"
+            exit 0
+          fi
+          git commit -q -m "deploy ${target}: ${commit_sha}"
+          git branch -M gh-pages
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          for attempt in 1 2 3; do
+            git push -f origin gh-pages && exit 0
+            echo "gh-pages push failed, retrying (${attempt}/3)..." >&2
+            sleep $((attempt * 5))
+          done
+          echo "gh-pages push failed after 3 attempts" >&2
+          exit 1
