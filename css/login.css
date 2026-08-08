@@ -2,10 +2,13 @@
   display: grid;
   place-items: center;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 1.5rem;
+  padding: max(1.5rem, env(safe-area-inset-top)) max(1.5rem, env(safe-area-inset-right))
+    max(1.5rem, env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-left));
   background:
     radial-gradient(ellipse 70% 50% at 100% 0%, rgba(0, 112, 192, 0.12), transparent 55%),
-    linear-gradient(180deg, #eef3f9 0%, #f4f7fb 100%);
+    linear-gradient(180deg, var(--color-bg-mid) 0%, var(--color-bg) 100%);
 }
 
 .login-card {
@@ -22,7 +25,7 @@
   right: 0;
   top: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--findi-navy) 0 50%, var(--findi-red) 50% 70%, var(--bp-blue) 70% 100%);
+  background: var(--brand-stripe);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 

@@ -20,30 +20,38 @@
     },
   };
 
-  const CASH_MODES = [
-    { key: "bank_cc", label: "Bank CC draw" },
-    { key: "bank_transfer", label: "Bank transfer" },
-    { key: "cash", label: "Cash" },
-    { key: "other", label: "Other" },
-  ];
+  /** Persisted on cash_loads.mode (UI does not expose a selector). */
+  const ATM_LOAD_MODE = "bank_cc";
+
+  const ATM_RPCS = {
+    INQUIRY: "record_atm_inquiry",
+    LOAD: "record_replenish",
+  };
+
+  const RECEIPT_KINDS = {
+    INQUIRY: "inquiry",
+    ATM: "atm",
+  };
 
   const NAV_ITEMS = [
-    { href: "dashboard.html", label: "Home", icon: "◉", roles: ["admin", "operator"] },
-    { href: "cash.html", label: "Cash", icon: "₹", roles: ["admin", "operator"] },
-    { href: "commissions.html", label: "Commission", icon: "%", roles: ["admin"] },
-    { href: "users.html", label: "Users", icon: "◎", roles: ["admin"] },
+    { href: "dashboard.html", label: "Dashboard", icon: "◉", roles: ["admin", "operator"] },
+    { href: "cash.html", label: "Cash desk", icon: "₹", roles: ["admin", "operator"] },
+    { href: "commissions.html", label: "Commissions", icon: "%", roles: ["admin"] },
+    { href: "users.html", label: "Settings", icon: "◎", roles: ["admin"] },
     { href: "reports.html", label: "Reports", icon: "▤", roles: ["admin", "operator"] },
   ];
 
   global.AppConfig = {
     DEFAULT_STATION,
-    CASH_MODES,
+    ATM_LOAD_MODE,
+    ATM_RPCS,
+    RECEIPT_KINDS,
     NAV_ITEMS,
     APP_NAME: "FiNDi",
     PRODUCT_NAME: "FNS Cashline",
     VENTURE_NAME: "F & S Ventures",
-    SITE_LINE: "at Bishnupriya Fuels · Padmanavpur",
+    SITE_LINE: "Bishnupriya Fuels · Padmanavpur",
     STATION_NAME: "Bishnupriya Fuels",
-    TAGLINE: "ATM float desk",
+    TAGLINE: "ATM cash operations",
   };
 })(typeof window !== "undefined" ? window : globalThis);

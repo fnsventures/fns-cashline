@@ -69,7 +69,7 @@ function renderNavLinks(items, activeHref, className = "nav-link") {
   return items
     .map((item) => {
       const active = item.href === activeHref ? " is-active" : "";
-      return `<a href="${item.href}" class="${className}${active}"><span class="nav-icon" aria-hidden="true">${item.icon}</span>${escapeHtml(item.label)}</a>`;
+      return `<a href="${item.href}" class="${className}${active}"><span class="nav-icon" aria-hidden="true">${item.icon}</span><span class="nav-label">${escapeHtml(item.label)}</span></a>`;
     })
     .join("");
 }
@@ -108,7 +108,7 @@ function renderTopbar(pageTitle, activeHref, user = currentAppUser) {
       </a>
       <p class="page-title">${escapeHtml(pageTitle)}</p>
       <nav class="nav-wrap" id="app-nav" aria-label="Primary"></nav>
-      <button type="button" class="btn btn--ghost btn--sm" id="logout-btn">Logout</button>
+      <button type="button" class="btn btn--ghost btn--sm" id="logout-btn">Sign out</button>
     </div>
   `;
 

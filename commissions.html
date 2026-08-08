@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Commission · FiNDi ATM</title>
+    <title>Commissions · FNS Cashline</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -27,18 +27,32 @@
     <main class="page">
       <div class="container page-grid">
         <section class="card">
-          <h2 class="section-title">Commission (admin)</h2>
+          <div class="toolbar">
+            <div>
+              <h2 class="section-title" style="margin: 0">Commission track</h2>
+              <p class="muted" style="margin: 0.35rem 0 0">Monthly net, transactions, and year overview.</p>
+            </div>
+            <div>
+              <label for="track-month">Month</label>
+              <input id="track-month" type="month" />
+            </div>
+          </div>
+          <div id="commission-track"></div>
+        </section>
+
+        <section class="card">
+          <h2 class="section-title">Record commission</h2>
           <p class="muted" style="margin-top: 0">
-            Direct calculation: <strong>transactions × rate per txn = commission</strong>. Operators cannot see this.
+            Formula: <strong>transactions × rate per transaction − TDS = net commission</strong>. Visible to administrators only.
           </p>
           <form id="commission-form" class="form">
             <div class="form-grid">
               <div>
-                <label for="period_start">From</label>
+                <label for="period_start">Period from</label>
                 <input id="period_start" name="period_start" type="date" required />
               </div>
               <div>
-                <label for="period_end">To</label>
+                <label for="period_end">Period to</label>
                 <input id="period_end" name="period_end" type="date" required />
               </div>
               <div>
@@ -52,7 +66,7 @@
                 <input id="transaction_count" name="transaction_count" type="number" min="0" step="1" value="0" required />
               </div>
               <div>
-                <label for="rate_per_txn">Rate per txn (₹)</label>
+                <label for="rate_per_txn">Rate per transaction (₹)</label>
                 <input id="rate_per_txn" name="rate_per_txn" type="number" min="0" step="0.01" value="0" required />
               </div>
               <div>
@@ -62,13 +76,13 @@
             </div>
 
             <div class="calc-box" aria-live="polite">
-              <span>Commission (auto)</span>
+              <span>Net commission (auto)</span>
               <strong id="commission-preview">₹0</strong>
               <span id="commission-preview-detail" class="muted">0 txn × ₹0 − TDS ₹0</span>
             </div>
 
             <label for="commission_reference">Reference</label>
-            <input id="commission_reference" name="reference" type="text" placeholder="Settlement / UTR ID" />
+            <input id="commission_reference" name="reference" type="text" placeholder="UTR / payment reference" />
             <label for="commission_notes">Notes</label>
             <textarea id="commission_notes" name="notes" rows="2" placeholder="Optional"></textarea>
             <button type="submit">Save commission</button>

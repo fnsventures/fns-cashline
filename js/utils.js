@@ -2,6 +2,8 @@
  * Shared utilities for the ATM franchise app.
  */
 
+const AMOUNT_EPS = 0.009;
+
 function escapeHtml(str) {
   return String(str ?? "")
     .replace(/&/g, "&amp;")
@@ -22,6 +24,18 @@ function toLocalDateString(date) {
 
 function getLocalDateString() {
   return toLocalDateString(new Date());
+}
+
+function parseAmount(raw, { allowZero = false } = {}) {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  if (allowZero ? n < 0 : n <= 0) return null;
+  return Math.round(n * 100) / 100;
+}
+
+function rpcErrorMessage(err) {
+  const msg = err?.message || err?.error_description || String(err || "Request failed");
+  return msg.replace(/^.*error:\s*/i, "").trim();
 }
 
 function formatINR(amount) {
@@ -95,9 +109,12 @@ function setButtonLoading(button, loading, label = "Please wait…") {
   }
 }
 
+window.AMOUNT_EPS = AMOUNT_EPS;
 window.escapeHtml = escapeHtml;
 window.toLocalDateString = toLocalDateString;
 window.getLocalDateString = getLocalDateString;
+window.parseAmount = parseAmount;
+window.rpcErrorMessage = rpcErrorMessage;
 window.formatINR = formatINR;
 window.formatINRDecimal = formatINRDecimal;
 window.formatDisplayDate = formatDisplayDate;
