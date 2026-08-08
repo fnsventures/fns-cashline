@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Home · FiNDi ATM</title>
+    <title>Dashboard · FNS Cashline</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -19,69 +19,53 @@
     <script defer src="js/appConfig.js"></script>
     <script defer src="js/supabase.js"></script>
     <script defer src="js/auth.js"></script>
+    <script defer src="js/atmCycle.js"></script>
     <script defer src="js/dashboard.js"></script>
   </head>
   <body>
     <header id="app-topbar" class="no-print"></header>
 
     <main class="page">
-      <div class="container page-grid">
-        <p class="station-stripe">Bishnupriya Fuels Petrol Pump · Padmanavpur</p>
-        <p class="site-line">FiNDi ATM · Bank CC &amp; load desk</p>
+      <div class="container page-grid dash-page">
+        <p class="dash-site-line" id="dash-site-line">FiNDi ATM · Inquiry &amp; load desk</p>
 
-        <section class="float-hero" aria-labelledby="pending-label">
-          <p class="float-hero-label" id="pending-label">Pending to load into ATM</p>
-          <p class="hero-amount" id="kpi-pending">—</p>
+        <section class="float-hero" id="dash-hero" aria-labelledby="pending-heading">
+          <div class="float-hero-top">
+            <div>
+              <p class="float-hero-label" id="pending-heading">Pending to load into ATM</p>
+              <p class="hero-amount" id="kpi-pending">—</p>
+            </div>
+            <span class="float-hero-badge" aria-hidden="true">ATM</span>
+          </div>
+
           <div class="float-meta">
             <div class="float-meta-item">
-              <span>Total capital (CC)</span>
+              <span>Total capital</span>
               <strong id="kpi-capital">—</strong>
             </div>
             <div class="float-meta-item">
-              <span>Drawn from bank</span>
-              <strong id="kpi-bank">—</strong>
+              <span>Cash in ATM</span>
+              <strong id="kpi-in-atm">—</strong>
             </div>
             <div class="float-meta-item">
-              <span>Loaded into ATM</span>
-              <strong id="kpi-loaded">—</strong>
+              <span>Trading account</span>
+              <strong id="kpi-trading">—</strong>
             </div>
           </div>
 
-          <div class="deposit-callout" id="pending-callout">
+          <div class="float-action" id="float-action">
             <div>
-              <p>Cash drawn from bank but not yet in the machine</p>
-              <strong id="kpi-pending-detail">—</strong>
+              <span class="float-action-label" id="action-detail">Customer withdrawals due into the machine</span>
+              <strong class="float-action-amount" id="action-amount">—</strong>
             </div>
-            <a class="btn btn--accent" href="cash.html">Record cash</a>
+            <a class="btn btn--accent" id="action-cta" href="cash.html">Record load</a>
           </div>
         </section>
 
-        <section class="today-strip" aria-label="Today">
-          <div class="today-tile">
-            <span>Bank draw today</span>
-            <strong id="kpi-bank-today">—</strong>
-          </div>
-          <div class="today-tile">
-            <span>ATM load today</span>
-            <strong id="kpi-loaded-today">—</strong>
-          </div>
-        </section>
-
-        <section class="card admin-panel" id="admin-commission-panel" hidden>
-          <h2 class="section-title">Commission (admin)</h2>
-          <p class="muted" style="margin-top: 0">Visible to admins only.</p>
-          <div class="float-meta">
-            <div class="float-meta-item">
-              <span>Net earned (all time)</span>
-              <strong id="kpi-commission">—</strong>
-            </div>
-            <div class="float-meta-item">
-              <span>Transactions</span>
-              <strong id="kpi-transactions">—</strong>
-            </div>
-          </div>
-          <p style="margin: 1rem 0 0"><a href="commissions.html">Manage commission →</a></p>
-        </section>
+        <p class="dash-admin" id="admin-line" hidden>
+          Commissions <strong id="kpi-commission">—</strong>
+          <a href="commissions.html">View →</a>
+        </p>
       </div>
     </main>
   </body>

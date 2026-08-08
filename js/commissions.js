@@ -1,7 +1,9 @@
-/* global supabaseClient, requireAdmin, renderTopbar, formatINR, formatINRDecimal, formatDisplayDate, showToast */
+/* global supabaseClient, requireAdmin, renderTopbar, formatINR, formatINRDecimal, formatDisplayDate, formatMonthYear, showToast */
 
 const commissionForm = document.getElementById("commission-form");
 const commissionTable = document.getElementById("commission-table");
+const commissionTrack = document.getElementById("commission-track");
+const trackMonth = document.getElementById("track-month");
 const previewEl = document.getElementById("commission-preview");
 const previewDetailEl = document.getElementById("commission-preview-detail");
 
@@ -13,6 +15,22 @@ function firstDayOfMonth(dateStr) {
 function lastDayOfMonth(dateStr) {
   const d = new Date(`${dateStr}T12:00:00`);
   return toLocalDateString(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+}
+
+function monthRangeFromInput(value) {
+  const [year, month] = String(value || "").split("-").map(Number);
+  if (!year || !month) {
+    const now = new Date();
+    return monthRangeFromInput(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+  }
+  const start = new Date(year, month - 1, 1);
+  return {
+    year,
+    month,
+    startDate: toLocalDateString(start),
+    endDate: toLocalDateString(new Date(year, month, 0)),
+    label: formatMonthYear(toLocalDateString(start)),
+  };
 }
 
 function calcCommission() {
@@ -37,6 +55,93 @@ async function fetchCommissions() {
     .from("commission_settlements")
     .select("*")
     .order("period_start", { ascending: false });
+}
+
+function aggregateByMonth(rows, year) {
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const start = new Date(year, i, 1);
+    return {
+      label: formatMonthYear(toLocalDateString(start)),
+      shortLabel: start.toLocaleDateString("en-IN", { month: "short" }),
+      txns: 0,
+      net: 0,
+      gross: 0,
+      tds: 0,
+      entries: 0,
+    };
+  });
+  for (const row of rows) {
+    const d = new Date(`${row.period_start}T12:00:00`);
+    if (Number.isNaN(d.getTime()) || d.getFullYear() !== year) continue;
+    const bucket = months[d.getMonth()];
+    bucket.txns += Number(row.transaction_count) || 0;
+    bucket.net += Number(row.net_commission) || 0;
+    bucket.gross += Number(row.gross_commission) || 0;
+    bucket.tds += Number(row.tds) || 0;
+    bucket.entries += 1;
+  }
+  return months;
+}
+
+function renderTrack(rows) {
+  if (!commissionTrack || !trackMonth) return;
+  const range = monthRangeFromInput(trackMonth.value);
+  const monthRows = rows.filter((r) => r.period_start >= range.startDate && r.period_start <= range.endDate);
+  const yearRows = rows.filter((r) => String(r.period_start || "").startsWith(String(range.year)));
+
+  const monthNet = monthRows.reduce((s, r) => s + Number(r.net_commission), 0);
+  const monthTxns = monthRows.reduce((s, r) => s + Number(r.transaction_count), 0);
+  const monthGross = monthRows.reduce((s, r) => s + Number(r.gross_commission), 0);
+  const monthTds = monthRows.reduce((s, r) => s + Number(r.tds), 0);
+  const yearNet = yearRows.reduce((s, r) => s + Number(r.net_commission), 0);
+  const yearTxns = yearRows.reduce((s, r) => s + Number(r.transaction_count), 0);
+
+  const byMonth = aggregateByMonth(yearRows, range.year);
+  const maxNet = Math.max(...byMonth.map((m) => m.net), 1);
+  const chart = byMonth
+    .map((m) => {
+      const pct = Math.max(2, Math.round((m.net / maxNet) * 100));
+      return `<div class="track-bar" title="${escapeHtml(m.label)}: ${formatINR(m.net)}">
+        <div class="track-bar__fill" style="height:${m.net > 0 ? pct : 2}%"></div>
+        <span class="track-bar__label">${escapeHtml(m.shortLabel)}</span>
+      </div>`;
+    })
+    .join("");
+
+  const monthlyTable = byMonth
+    .filter((m) => m.entries > 0)
+    .map(
+      (m) => `<tr>
+        <td data-label="Month">${escapeHtml(m.label)}</td>
+        <td data-label="Txns">${m.txns}</td>
+        <td data-label="Gross">${formatINRDecimal(m.gross)}</td>
+        <td data-label="TDS">${formatINRDecimal(m.tds)}</td>
+        <td data-label="Net">${formatINRDecimal(m.net)}</td>
+      </tr>`
+    )
+    .join("");
+
+  commissionTrack.innerHTML = `
+    <section class="report-kpis" style="margin-top:1rem">
+      <div class="kpi-card"><span class="kpi-label">Net (${escapeHtml(range.label)})</span><strong>${formatINR(
+        monthNet
+      )}</strong></div>
+      <div class="kpi-card"><span class="kpi-label">Txns (month)</span><strong>${monthTxns}</strong></div>
+      <div class="kpi-card"><span class="kpi-label">Gross (month)</span><strong>${formatINR(monthGross)}</strong></div>
+      <div class="kpi-card"><span class="kpi-label">TDS (month)</span><strong>${formatINR(monthTds)}</strong></div>
+      <div class="kpi-card"><span class="kpi-label">Net YTD ${range.year}</span><strong>${formatINR(yearNet)}</strong></div>
+      <div class="kpi-card"><span class="kpi-label">Txns YTD ${range.year}</span><strong>${yearTxns}</strong></div>
+    </section>
+    <section class="report-section">
+      <h3>Monthly net (${range.year})</h3>
+      <div class="track-chart">${chart}</div>
+      ${
+        monthlyTable
+          ? `<table class="data-table" style="margin-top:1rem"><thead><tr><th>Month</th><th>Txns</th><th>Gross</th><th>TDS</th><th>Net</th></tr></thead><tbody>${monthlyTable}</tbody></table>`
+          : `<p class="muted">No settlements in ${range.year} yet.</p>`
+      }
+    </section>
+  `;
 }
 
 function renderCommissionTable(rows) {
@@ -64,7 +169,9 @@ async function refreshTable() {
     showToast(error.message, "error");
     return;
   }
-  renderCommissionTable(data || []);
+  const rows = data || [];
+  renderCommissionTable(rows);
+  renderTrack(rows);
 }
 
 async function handleSubmit(event) {
@@ -74,7 +181,7 @@ async function handleSubmit(event) {
   const { txns, rate, tds, gross, net } = calcCommission();
 
   if (txns <= 0 || rate <= 0) {
-    showToast("Enter transactions and rate per txn.", "error");
+    showToast("Enter transactions and rate per transaction.", "error");
     return;
   }
 
@@ -114,9 +221,14 @@ async function handleSubmit(event) {
 document.addEventListener("DOMContentLoaded", async () => {
   const user = await requireAdmin();
   if (!user) return;
-  renderTopbar("Commission", "commissions.html", user);
+  renderTopbar("Commissions", "commissions.html", user);
 
   const today = getLocalDateString();
+  const now = new Date();
+  if (trackMonth) {
+    trackMonth.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    trackMonth.addEventListener("change", refreshTable);
+  }
   if (commissionForm?.period_start) commissionForm.period_start.value = firstDayOfMonth(today);
   if (commissionForm?.period_end) commissionForm.period_end.value = lastDayOfMonth(today);
 
