@@ -1,10 +1,10 @@
-# FNS Cashline
+# FNS Cashline · FINDI
 
 ## A F & S Ventures Company
 
-**FNS Cashline** is the cash-franchise operations desk for **F & S Ventures** — track float loading, commission settlements, and profitability for ATM and other cash-based franchises (starting at Bishnupriya Fuels).
+**FINDI** ATM float desk at **Bishnupriya Fuels Petrol Pump**, Padmanavpur — track cash drawn from the bank CC, loaded into the machine, pending cash still in hand, and (for admins) partner commission.
 
-You load cash into the ATM machine; the franchise partner (bank / WLA operator) pays you commission per transaction and settles unused cash back to your account. This app keeps those flows in one place.
+**Live** [`main`](https://fnscashline.fnsventures.in) · **Test** `staging` → `/staging/`
 
 ---
 
@@ -12,26 +12,21 @@ You load cash into the ATM machine; the franchise partner (bank / WLA operator) 
 
 | Area | What it covers |
 |------|----------------|
-| **Dashboard** | Cash deployed, loads this month, commission earned, quick snapshot |
-| **Cash loads** | Record each refill (date, amount, mode, bank reference) |
-| **Cash settlements** | Record cash returned by the franchise partner |
-| **Commissions** | Monthly settlement lines (txn count, gross, TDS, net) |
-| **Reports** | Printable monthly summary for reconciliation |
+| **Home** | Pending to load, capital target, bank/ATM totals, today’s activity; commission KPIs for admin |
+| **Cash** | Bank draw + ATM load with **required receipt photos**, auto time + GPS |
+| **Commission** | Settlements: **txns × rate − TDS** — **admin only** |
+| **Users** | Provision operators/admins + set total capital — **admin only** |
+| **Reports** | Monthly printable summary |
 
-**Roles:** `admin` (full access). Authorization is enforced by Supabase Row Level Security (RLS).
+**Roles:** `admin` (full access) · `operator` (float desk only). Enforced by Supabase RLS.
 
----
+### Float math
 
-## Business model (India)
+```text
+pending_to_load = max(0, sum(bank_draws) − sum(atm_loads))
+```
 
-Typical ATM franchise at a petrol pump:
-
-1. **Space** — You provide a secure spot on the forecourt (often 25–50 sq ft).
-2. **Cash loading** — You fund the ATM cassette; the partner may require a minimum float (e.g. ₹5–10 lakh).
-3. **Commission** — Paid per withdrawal (e.g. ₹8–15 per txn) or as a monthly settlement.
-4. **Settlement** — Unused cash is swept back to your bank; commission is credited separately (TDS may apply).
-
-See [docs/BUSINESS.md](docs/BUSINESS.md) for partner onboarding checklist and KPIs.
+Daily flow: **Bank CC draw → ATM load**. See the [business guide](docs/BUSINESS.md) for field-by-field ops detail.
 
 ---
 
@@ -39,29 +34,34 @@ See [docs/BUSINESS.md](docs/BUSINESS.md) for partner onboarding checklist and KP
 
 | Document | Purpose |
 |----------|---------|
-| [**Business guide**](docs/BUSINESS.md) | Franchise model, onboarding, commission math |
-| [**Development guide**](docs/DEVELOPMENT.md) | Local setup, Supabase, deployment |
+| [**Business guide**](docs/BUSINESS.md) | Workflows, KPIs, roles, onboarding, receipts & GPS |
+| [**Development guide**](docs/DEVELOPMENT.md) | Local setup, schema, RLS, storage, migrations, deploy wiring |
+| [**Operations**](docs/OPERATIONS.md) | Staging deploy · production release |
 
-Database reference: `supabase/schema.sql`.
+Database: [`supabase/schema.sql`](supabase/schema.sql) · upgrades (in order):
+
+1. [`20260808150000_findi_float_roles.sql`](supabase/migrations/20260808150000_findi_float_roles.sql)
+2. [`20260808153000_receipts_and_commission_rate.sql`](supabase/migrations/20260808153000_receipts_and_commission_rate.sql)
+3. [`20260808160000_bank_draw_atm_load_geo.sql`](supabase/migrations/20260808160000_bank_draw_atm_load_geo.sql)
+
+**Deploy:** push to `staging` or `main` → GitHub Actions → GitHub Pages (`gh-pages`), with `js/env.js` built from environment secrets (same pattern as petrolPump).
 
 ---
 
 ## Getting started
 
 ```bash
-# 1. Copy env template
 cp js/env.example.js js/env.js
-# Edit js/env.js with your Supabase URL and anon key
+# Edit js/env.js with staging/prod Supabase URL + anon key
 
-# 2. Apply schema in Supabase SQL editor
-#    Run supabase/schema.sql
+# Fresh project: run supabase/schema.sql in SQL Editor
+# Existing project: run the three migration files above, in order
 
-# 3. Serve locally
 python3 -m http.server 8080
 # Open http://localhost:8080
 ```
 
-Full setup: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+Full setup, schema map, and smoke checklist: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ---
 
@@ -69,7 +69,7 @@ Full setup: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 | Repo | Purpose |
 |------|---------|
-| [petrolPump](../petrolPump) | Bishnupriya Fuels daily operations (DSR, credit, billing, HR) |
+| [petrolPump](../petrolPump) | Bishnupriya Fuels daily operations |
 | [fnsventuresRoot](../fnsventuresRoot) | F & S Ventures corporate website |
 
 ---

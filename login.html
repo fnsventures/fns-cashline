@@ -3,18 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Login · FNS Cashline</title>
+    <title>Sign in · FiNDi ATM</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap"
     />
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/login.css" />
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script defer src="js/env.js"></script>
     <script defer src="js/utils.js"></script>
+    <script defer src="js/brand.js"></script>
     <script defer src="js/appConfig.js"></script>
     <script defer src="js/supabase.js"></script>
     <script defer src="js/auth.js"></script>
@@ -22,15 +23,19 @@
   <body class="login-page">
     <main class="login-card card">
       <div class="login-brand">
-        <span class="login-logo" aria-hidden="true">FNS</span>
+        <span class="login-logo" aria-hidden="true">
+          <span class="findi-logo">F<span class="i-dot">ı</span>ND<span class="i-dot">ı</span></span>
+        </span>
         <div>
           <h1 class="login-brand-title">
-            FNS Cashline
-            <span class="login-brand-venture">— F&amp;S Ventures</span>
+            FiNDi ATM
+            <span class="login-brand-venture">FNS Cashline · F &amp; S Ventures</span>
           </h1>
         </div>
       </div>
-      <p class="muted">Sign in to manage cash loads and commission settlements.</p>
+      <p class="login-site muted">
+        <strong>Bishnupriya Fuels</strong> Petrol Pump · Padmanavpur
+      </p>
 
       <form id="login-form" class="form" autocomplete="on">
         <label for="email">Email</label>
@@ -39,11 +44,11 @@
         <label for="password">Password</label>
         <input id="password" name="password" type="password" placeholder="Enter password" minlength="6" required />
 
-        <button type="submit" id="login-button">Login</button>
+        <button type="submit" id="login-button">Sign in</button>
         <p id="login-error" class="login-error" hidden></p>
       </form>
 
-      <a class="login-back muted" href="index.html">← Back to home</a>
+      <a class="login-back muted" href="index.html">← Back</a>
     </main>
   </body>
 </html>

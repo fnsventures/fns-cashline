@@ -1,8 +1,10 @@
-/* global supabaseClient, AppConfig */
+/* global supabaseClient, AppConfig, findiLogoHtml */
 
 const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
 const loginButton = document.getElementById("login-button");
+
+let currentAppUser = null;
 
 async function getSession() {
   const { data } = await supabaseClient.auth.getSession();
@@ -23,7 +25,12 @@ async function getCurrentUser() {
     console.error("Failed to load user profile", error);
     return null;
   }
+  currentAppUser = data;
   return data;
+}
+
+function isAdmin(user = currentAppUser) {
+  return user?.role === "admin";
 }
 
 async function requireAuth(redirectTo = "login.html") {
@@ -43,27 +50,60 @@ async function requireAuth(redirectTo = "login.html") {
   return user;
 }
 
-function renderNav(activeHref) {
-  const nav = document.getElementById("app-nav");
-  if (!nav || !AppConfig?.NAV_ITEMS) return;
-
-  nav.innerHTML = AppConfig.NAV_ITEMS.map((item) => {
-    const active = item.href === activeHref ? " is-active" : "";
-    return `<a href="${item.href}" class="nav-link${active}"><span class="nav-icon" aria-hidden="true">${item.icon}</span>${escapeHtml(item.label)}</a>`;
-  }).join("");
+async function requireAdmin(redirectTo = "dashboard.html") {
+  const user = await requireAuth();
+  if (!user) return null;
+  if (!isAdmin(user)) {
+    window.location.href = redirectTo;
+    return null;
+  }
+  return user;
 }
 
-function renderTopbar(pageTitle, activeHref) {
+function navItemsFor(user) {
+  const role = user?.role || "operator";
+  return (AppConfig?.NAV_ITEMS || []).filter((item) => (item.roles || []).includes(role));
+}
+
+function renderNavLinks(items, activeHref, className = "nav-link") {
+  return items
+    .map((item) => {
+      const active = item.href === activeHref ? " is-active" : "";
+      return `<a href="${item.href}" class="${className}${active}"><span class="nav-icon" aria-hidden="true">${item.icon}</span>${escapeHtml(item.label)}</a>`;
+    })
+    .join("");
+}
+
+function renderNav(activeHref, user = currentAppUser) {
+  const nav = document.getElementById("app-nav");
+  if (!nav) return;
+  nav.innerHTML = renderNavLinks(navItemsFor(user), activeHref);
+}
+
+function renderBottomNav(activeHref, user = currentAppUser) {
+  let bottom = document.getElementById("app-bottom-nav");
+  if (!bottom) {
+    bottom = document.createElement("nav");
+    bottom.id = "app-bottom-nav";
+    bottom.className = "bottom-nav no-print";
+    bottom.setAttribute("aria-label", "Primary mobile");
+    document.body.appendChild(bottom);
+  }
+  bottom.innerHTML = renderNavLinks(navItemsFor(user), activeHref);
+}
+
+function renderTopbar(pageTitle, activeHref, user = currentAppUser) {
   const topbar = document.getElementById("app-topbar");
   if (!topbar) return;
 
+  const logo = typeof findiLogoHtml === "function" ? findiLogoHtml() : "FiNDi";
   topbar.innerHTML = `
     <div class="topbar-inner">
       <a class="brand" href="dashboard.html">
-        <span class="brand-mark" aria-hidden="true">FNS</span>
+        <span class="brand-mark" aria-hidden="true">${logo}</span>
         <span class="brand-text">
-          <span class="brand-title">${escapeHtml(AppConfig.APP_NAME)}</span>
-          <span class="brand-sub">${escapeHtml(AppConfig.VENTURE_NAME)}</span>
+          <span class="brand-title">FiNDi ATM</span>
+          <span class="brand-sub"><span class="station">Bishnupriya Fuels</span> · Padmanavpur</span>
         </span>
       </a>
       <p class="page-title">${escapeHtml(pageTitle)}</p>
@@ -72,7 +112,8 @@ function renderTopbar(pageTitle, activeHref) {
     </div>
   `;
 
-  renderNav(activeHref);
+  renderNav(activeHref, user);
+  renderBottomNav(activeHref, user);
 
   document.getElementById("logout-btn")?.addEventListener("click", async () => {
     await supabaseClient.auth.signOut();
@@ -80,10 +121,24 @@ function renderTopbar(pageTitle, activeHref) {
   });
 }
 
+function safeNextPath(raw) {
+  if (!raw) return "dashboard.html";
+  let value = raw;
+  try {
+    value = decodeURIComponent(raw);
+  } catch {
+    return "dashboard.html";
+  }
+  if (!/^[a-z0-9][a-z0-9._-]*\.html$/i.test(value)) return "dashboard.html";
+  return value;
+}
+
 async function initLoginPage() {
   if (!loginForm) return;
 
   const params = new URLSearchParams(window.location.search);
+  const nextPath = safeNextPath(params.get("next"));
+
   if (params.get("error") === "unprovisioned" && loginError) {
     loginError.textContent = "Your account is not provisioned. Contact the administrator.";
     loginError.hidden = false;
@@ -91,8 +146,11 @@ async function initLoginPage() {
 
   const session = await getSession();
   if (session) {
-    window.location.href = params.get("next") || "dashboard.html";
-    return;
+    const user = await getCurrentUser();
+    if (user) {
+      window.location.href = nextPath;
+      return;
+    }
   }
 
   loginForm.addEventListener("submit", async (event) => {
@@ -116,7 +174,7 @@ async function initLoginPage() {
       return;
     }
 
-    window.location.href = params.get("next") || "dashboard.html";
+    window.location.href = nextPath;
   });
 }
 
@@ -125,5 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.requireAuth = requireAuth;
+window.requireAdmin = requireAdmin;
 window.renderTopbar = renderTopbar;
 window.getCurrentUser = getCurrentUser;
+window.isAdmin = isAdmin;
