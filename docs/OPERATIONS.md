@@ -34,7 +34,7 @@ Important:
 
 ### DNS safety net (`fnsventures.in`)
 
-This zone hosts **multiple** GitHub Pages apps. **Adding `fnscashline` must never remove sibling CNAMEs.** A deleted host can look like a missing `js/env.js` (cached HTML + uncached config).
+This zone hosts **multiple** GitHub Pages apps. **Adding `fnscashline` must never remove sibling CNAMEs.** The UI distinguishes unreachable `js/env.js` (DNS/network) from a truly missing config.
 
 | Host (CNAME) | Target | App / repo |
 |--------------|--------|------------|
@@ -47,14 +47,14 @@ This zone hosts **multiple** GitHub Pages apps. **Adding `fnscashline` must neve
 - [ ] Domain / security **alerts** enabled for the account email
 - [ ] Before editing DNS: screenshot or export the DNS table
 - [ ] After editing: **add** a new row only — do not overwrite sibling hosts
-- [ ] **API auto-fix secrets** (once): create a Production key at [developer.godaddy.com/keys](https://developer.godaddy.com/keys), then add repo secrets on **both** `petrolpump` and `fns-cashline`:
+- [ ] **API auto-fix:** hourly schedule + secrets live on **`petrolpump`**. Optional repo secrets here for manual Actions runs:
   - `GODADDY_API_KEY`
   - `GODADDY_API_SECRET`
 
 **After any DNS change**, verify every sibling:
 
 ```bash
-./scripts/check-dns-siblings.sh           # check only
+./scripts/check-dns-siblings.sh           # downloads canonical script from petrolpump main
 ./scripts/check-dns-siblings.sh --fix     # restore missing/wrong CNAMEs via GoDaddy, then recheck
 ```
 
@@ -63,7 +63,7 @@ Or open:
 - `https://bishnupriyafuels.fnsventures.in/js/env.js`
 - `https://fnscashline.fnsventures.in/js/env.js`
 
-**Automated:** Actions → **Check DNS siblings** runs daily with `--fix`. Missing/wrong sibling CNAMEs are rewritten to `fnsventures.github.io` via GoDaddy when secrets are set. Auto-fix is **DNS only** — a bad `/js/env.js` still needs Actions → **Deploy** → `prod`. Keep the host list in `scripts/check-dns-siblings.sh` in sync with petrolpump when you add another site.
+**Automated:** The **hourly** check runs only in `petrolpump` (shared reusable workflow + canonical script). This repo’s **Check DNS siblings** Action is **manual only** and calls that reusable workflow. A restore opens a GitHub issue and writes a job summary. Auto-fix is **DNS only** — a bad `/js/env.js` still needs Actions → **Deploy** → `prod`. Add new hosts in **petrolpump** `scripts/check-dns-siblings.sh` only.
 
 ---
 
@@ -123,6 +123,7 @@ Each run uses that environment’s secrets and updates **`gh-pages`** only (stag
 
 | Problem | Fix |
 |---------|-----|
-| Banner: missing config / copy `env.example.js` | `./scripts/check-dns-siblings.sh --fix` (needs `GODADDY_*`); hard-refresh. If DNS OK but env bad → Deploy prod |
+| Banner: cannot reach `js/env.js` / DNS | Run `./scripts/check-dns-siblings.sh --fix` or wait for petrolpump hourly Action; hard-refresh |
+| Banner: missing config / copy `env.example.js` | Real missing env — local copy or Deploy prod |
 | Staging shows wrong Supabase project | GitHub **staging** secrets `SUPABASE_URL` / `SUPABASE_ANON_KEY` |
 | Live site unchanged after merge | Wait for Actions **Deploy**; hard-refresh |
