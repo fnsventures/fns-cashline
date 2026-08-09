@@ -105,7 +105,7 @@ returns double precision
 language sql
 immutable
 as $$
-  select 6371000d * 2 * asin(
+  select 6371000::double precision * 2 * asin(
     sqrt(
       power(sin(radians(lat2 - lat1) / 2), 2)
       + cos(radians(lat1)) * cos(radians(lat2)) * power(sin(radians(lng2 - lng1) / 2), 2)

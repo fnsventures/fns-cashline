@@ -2,7 +2,7 @@
 
 Technical setup, schema, auth, storage, and page map for **FNS Cashline / FINDI**.
 
-For day-to-day ops language (bank draw, pending to load, commission), see [BUSINESS.md](./BUSINESS.md).
+For day-to-day ops language (night inquiry, ATM load, pending to load, commission), see [BUSINESS.md](./BUSINESS.md).
 
 ---
 
@@ -52,10 +52,18 @@ No build step. Pages load Supabase JS from CDN and app scripts with `defer`.
      |-------|------|----------------|
      | 1 | `supabase/migrations/20260808150000_findi_float_roles.sql` | Roles, RLS helpers, float rename era |
      | 2 | `supabase/migrations/20260808153000_receipts_and_commission_rate.sql` | Receipts paths, commission `rate_per_txn`, storage bucket |
-     | 3 | `supabase/migrations/20260808160000_bank_draw_atm_load_geo.sql` | `bank_draws` table, geo columns, new `v_atm_summary` |
+     | 3 | `supabase/migrations/20260808160000_bank_draw_atm_load_geo.sql` | Legacy `bank_draws` table, geo columns |
      | 4 | `supabase/migrations/20260808170000_foolproof_ops_rpc.sql` | RPC-only writes, server time, geo/amount locks |
+     | 5 | `supabase/migrations/20260808180000_atm_inquiry_replenish_cycle.sql` | Night inquiry + morning ATM load cycle |
+     | 6 | `supabase/migrations/20260808181000_replenish_atm_load_only.sql` | ATM-load-only replenish (no bank draw) |
+     | 7 | `supabase/migrations/20260808182000_atm_inquiry_cycle_fix.sql` | Cycle form (do **not** re-run after later migrations) |
+     | 8 | `supabase/migrations/20260808183000_admin_atm_load_override.sql` | Admin amount override / load without inquiry |
+     | 9 | `supabase/migrations/20260808190000_atm_cycle_modular.sql` | DRY helpers (`_insert_cash_load`, `_open_inquiry`, capital room) |
+     | 10 | `supabase/migrations/20260808191000_atm_cycle_bugfixes.sql` | Balance / FOUND / helper lockdown |
+     | 11 | `supabase/migrations/20260808192000_grant_current_atm_balance.sql` | Grant `_current_atm_balance` for `v_atm_summary` |
+     | 12 | `supabase/migrations/20260808193000_atm_cycle_hardening.sql` | Concurrent load lock, admin force rules, override tags |
 
-   After upgrades, the live schema should match `schema.sql` (bank draws + ATM loads; no ops desk for customer withdrawals).
+   After upgrades, the live schema should match `schema.sql` (inquiry → ATM load cycle).
 
 ### Foolproof rules (database-enforced)
 
@@ -63,8 +71,9 @@ No build step. Pages load Supabase JS from CDN and app scripts with `defer`.
 |---------|-----------|
 | Time | `recorded_at = now()` on server — client clock ignored |
 | Location | GPS required; India bounds; optional station geofence |
-| Amount | Must be &gt; 0 and ≤ capital; ATM load ≤ pending bank cash |
-| Writes | Only via `record_bank_draw` / `record_atm_load` RPCs |
+| Night inquiry | Cash left ≤ opening; dispensed = opening − left; one open cycle; one inquiry per IST day |
+| Morning ATM load | Amount locked to night dispensed (admins may override); ATM receipt required |
+| Writes | Only via `record_atm_inquiry` / `record_replenish` RPCs |
 | Edits | Operators cannot update/delete past entries |
 
 Set station GPS under **Users → Capital & geofence** (“Use my current location”).
@@ -103,10 +112,10 @@ fns-cashline/
 ├── index.html              # Public FINDI landing
 ├── login.html
 ├── dashboard.html          # Home / KPIs
-├── cash.html               # Bank draw + ATM load
+├── cash.html               # Night inquiry + ATM load
 ├── commissions.html        # Admin settlements
 ├── users.html              # Admin: team + capital
-├── reports.html            # Monthly printable report
+├── reports.html            # Daily / monthly / commission printable reports
 ├── assets/                 # Brand / marketing images
 ├── css/
 │   ├── base.css
@@ -116,12 +125,14 @@ fns-cashline/
 ├── js/
 │   ├── env.example.js      # Template → copy to env.js
 │   ├── env.js              # Local secrets (do not commit)
-│   ├── appConfig.js        # Station defaults, nav, modes
+│   ├── appConfig.js        # Station defaults, nav, RPC/receipt constants
 │   ├── brand.js
 │   ├── auth.js             # Session, requireAuth, topbar, roles
 │   ├── supabase.js         # Client bootstrap
 │   ├── receipts.js         # Upload + signed URLs
 │   ├── geo.js              # Geolocation helpers
+│   ├── atmCycle.js         # Shared inquiry/load read model
+│   ├── opsSubmit.js        # Shared receipt + RPC submit helper
 │   ├── cash.js
 │   ├── dashboard.js
 │   ├── commissions.js
@@ -139,11 +150,11 @@ fns-cashline/
 
 | Page | Primary script | Notes |
 |------|----------------|-------|
-| `dashboard.html` | `dashboard.js` | Reads `v_atm_summary` + today’s bank/load sums |
-| `cash.html` | `cash.js` + `receipts.js` + `geo.js` | Inserts into `bank_draws` / `cash_loads` |
-| `commissions.html` | `commissions.js` | Admin gate in `auth.js`; writes `commission_settlements` |
+| `dashboard.html` | `dashboard.js` + `atmCycle.js` | Reads `v_atm_summary` — next action + cash location |
+| `cash.html` | `cash.js` + `atmCycle.js` + `opsSubmit.js` + `receipts.js` + `geo.js` | RPCs: `record_atm_inquiry` / `record_replenish` |
+| `commissions.html` | `commissions.js` | Admin settlements form + monthly/YTD track |
 | `users.html` | `users.js` | `provision_user` + `atm_settings` capital |
-| `reports.html` | `reports.js` | Month filter; commission section if admin |
+| `reports.html` | `reports.js` + `atmCycle.js` | Daily dispensed track, monthly rollup, commission year track (admin) |
 
 Shared: `env.js` → `supabase.js` → `auth.js` → page script. Nav items and role visibility live in `appConfig.js` (`NAV_ITEMS`).
 
@@ -170,8 +181,9 @@ Helpers (security definer):
 |----------------|-----|
 | `users` | Select own row; admin select/update all |
 | `atm_settings` | Staff select; admin write |
-| `bank_draws` | Staff all |
-| `cash_loads` | Staff all |
+| `bank_draws` | **Legacy** — staff select; admin delete (no app writes) |
+| `cash_loads` | Staff select; writes via `record_replenish` only |
+| `atm_inquiries` | Staff select; writes via `record_atm_inquiry` only |
 | `commission_settlements` | Admin all |
 | `v_atm_summary` | `grant select` to authenticated (view uses `security_invoker`) |
 | Storage `receipts` | Staff select/insert/update; insert path must start with `auth.uid()`; delete own or admin |
@@ -214,30 +226,36 @@ Single row (`id = 1`). JSON `config.station` includes:
 
 Users page updates `totalCapital` (and preserves other station keys).
 
-### `bank_draws`
+### `bank_draws` (legacy)
 
-Cash taken from bank CC.
+Historical bank CC draws. **Not used by the app** after the inquiry → ATM load cycle. Table kept for old rows; `record_bank_draw` execute is revoked.
+
+### `atm_inquiries`
+
+Night ATM inquiry (cycle open until morning load).
 
 | Column | Notes |
 |--------|--------|
-| `amount` | &gt; 0 |
-| `reference`, `notes` | Optional |
-| `receipt_path` | **Required** storage path |
-| `recorded_at` | Event time (app sets ISO now) |
-| `latitude`, `longitude`, `geo_accuracy_m` | Optional GPS |
-| `created_by` | `users.id` |
+| `inquiry_date` | IST calendar day; unique |
+| `opening_balance` | From `_current_atm_balance()` / capital |
+| `cash_left` | Closing balance from machine |
+| `dispensed` | `opening − cash_left` |
+| `receipt_path` | Required inquiry slip |
+| `replenished_at` | Set when morning load closes the cycle |
+| `recorded_at` + geo | Server time; GPS required |
 
 ### `cash_loads`
 
-Cash loaded into the ATM.
+Cash loaded into the ATM (morning step).
 
 | Column | Notes |
 |--------|--------|
-| `load_date` | Local calendar date |
-| `amount` | &gt; 0 |
-| `mode` | `bank_cc` \| `bank_transfer` \| `cash` \| `other` (UI currently saves `bank_cc`) |
-| `atm_receipt_path` | Required in app |
-| `recorded_at` + geo | Same pattern as bank draws |
+| `load_date` | IST calendar date |
+| `amount` | Locked to night dispensed (admins may override) |
+| `mode` | Always `bank_cc` today (`AppConfig.ATM_LOAD_MODE`) |
+| `atm_receipt_path` | Required |
+| `inquiry_id` | FK to night inquiry; null for admin orphan loads |
+| `recorded_at` + geo | Server time; GPS required |
 
 ### `commission_settlements` (admin)
 
@@ -253,15 +271,23 @@ Cash loaded into the ATM.
 
 ### `v_atm_summary`
 
-```sql
-total_bank_drawn      = sum(bank_draws.amount)
-total_loaded          = sum(cash_loads.amount)
-pending_to_load       = max(0, total_bank_drawn − total_loaded)
-total_capital         = atm_settings.config.station.totalCapital
-total_commission_net  = sum(commission_settlements.net_commission)
-total_transactions    = sum(commission_settlements.transaction_count)
+Inquiry-driven read model (via `_current_atm_balance()`):
+
+```text
+cash_in_atm         = open.cash_left, or last closed + loads (+ orphan admin loads)
+pending_replenish   = open inquiry dispensed (0 if none)
+pending_to_load     = alias of pending_replenish (compat)
+total_capital       = atm_settings.config.station.totalCapital
+open_inquiry_*      = fields from the open cycle row
+total_dispensed     = sum(atm_inquiries.dispensed)
+total_loaded        = sum(cash_loads.amount)
+total_bank_drawn    = sum(bank_draws) — legacy column
+total_commission_*  = commission rollups
 ```
 
+Active write RPCs: `record_atm_inquiry`, `record_replenish` (optional `p_amount`, `p_force` for admins).
+
+Shared helpers: `_validate_*`, `_current_atm_balance`, `_atm_opening_balance`, `_open_inquiry`, `_insert_cash_load`.
 ---
 
 ## 7. Receipt storage
@@ -270,7 +296,7 @@ total_transactions    = sum(commission_settlements.transaction_count)
 - Max size: **5 MB**
 - MIME: jpeg, jpg, png, webp, heic, heif
 - Object path pattern: `{userId}/{kind}/{timestamp}-{rand}.{ext}`  
-  where `kind` is `bank` or `atm` (`js/receipts.js`)
+  where `kind` is `inquiry` or `atm` (`AppConfig.RECEIPT_KINDS` / `js/receipts.js`)
 - Viewing: `createSignedUrl` (1 hour) for history tables
 
 Ensure the migration / schema that creates the bucket and storage policies has been applied; otherwise uploads fail at runtime.
@@ -282,8 +308,8 @@ Ensure the migration / schema that creates the bucket and storage policies has b
 `js/geo.js` + Cash page:
 
 - On load and before save, refresh GPS into `geoState`
-- Persist `latitude`, `longitude`, `geo_accuracy_m` on insert
-- If GPS missing, confirm dialog before saving without location
+- Persist `latitude`, `longitude`, `geo_accuracy_m` via RPCs
+- GPS is **required** (save blocked until location is available)
 - History shows formatted coords + optional Google Maps link
 
 Serve over `localhost` or HTTPS so browsers allow geolocation.
@@ -350,9 +376,10 @@ After schema + env:
 
 - [ ] Login as admin  
 - [ ] Users: set capital; provision an operator  
-- [ ] Cash: bank draw with photo + GPS → row + pending increases  
-- [ ] Cash: ATM load with photo → pending decreases  
-- [ ] Home KPIs match pending / today totals  
+- [ ] Cash: night inquiry with closing balance + slip + GPS → open cycle / pending increases  
+- [ ] Cash: ATM load with photo → cycle closes / pending clears  
+- [ ] Admin: override load amount or load without inquiry  
+- [ ] Home KPIs match pending / cash in ATM  
 - [ ] Commission: save settlement; appears on Home admin panel  
 - [ ] Logout → login as operator: no Commission / Users nav; commission RLS blocks direct table access  
 - [ ] Reports: month print view loads  

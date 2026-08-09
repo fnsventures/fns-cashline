@@ -148,7 +148,7 @@ async function handleUserSubmit(event) {
 document.addEventListener("DOMContentLoaded", async () => {
   const user = await requireAdmin();
   if (!user) return;
-  renderTopbar("Users", "users.html", user);
+  renderTopbar("Settings", "users.html", user);
 
   capitalForm?.addEventListener("submit", handleCapitalSubmit);
   userForm?.addEventListener("submit", handleUserSubmit);

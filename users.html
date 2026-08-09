@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Users · FINDI</title>
+    <title>Settings · FNS Cashline</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -28,14 +28,14 @@
     <main class="page">
       <div class="container page-grid">
         <section class="card">
-          <h2 class="section-title">Capital &amp; geofence</h2>
+          <h2 class="section-title">Station settings</h2>
           <p class="muted" style="margin-top: 0">
-            Capital caps each draw/load. Set station GPS so operators can only save on-site.
+            Set total capital and the station geofence. Operators can save records only within the allowed radius.
           </p>
           <form id="capital-form" class="form">
             <div class="form-grid">
               <div>
-                <label for="total_capital">Capital / CC limit (₹)</label>
+                <label for="total_capital">Total capital (₹)</label>
                 <input id="total_capital" name="total_capital" type="number" min="0" step="1" inputmode="decimal" required />
               </div>
               <div>
@@ -47,16 +47,16 @@
                 <input id="geo_lng" name="geo_lng" type="number" step="any" placeholder="e.g. 84.7945" />
               </div>
               <div>
-                <label for="geo_radius">Allowed radius (meters)</label>
+                <label for="geo_radius">Allowed radius (metres)</label>
                 <input id="geo_radius" name="geo_radius" type="number" min="50" step="1" value="3000" />
               </div>
             </div>
             <label class="check-row">
               <input id="geo_require" name="geo_require" type="checkbox" checked />
-              Require GPS for bank draw / ATM load
+              Require GPS for night inquiry and ATM load
             </label>
             <div class="toolbar">
-              <button type="button" class="btn btn--ghost" id="use-my-location-btn">Use my current location as station</button>
+              <button type="button" class="btn btn--ghost" id="use-my-location-btn">Use current location</button>
               <button type="submit">Save settings</button>
             </div>
           </form>
@@ -65,7 +65,7 @@
         <section class="card">
           <h2 class="section-title">Add user</h2>
           <p class="muted" style="margin-top: 0">
-            Create the login first in Supabase → Authentication → Users, then provision here.
+            Create the login in Supabase → Authentication → Users, then provision the role here.
           </p>
           <form id="user-form" class="form">
             <div class="form-grid">
@@ -81,7 +81,7 @@
                 <label for="user_role">Role</label>
                 <select id="user_role" name="role">
                   <option value="operator">Operator</option>
-                  <option value="admin">Admin</option>
+                  <option value="admin">Administrator</option>
                 </select>
               </div>
             </div>
@@ -90,7 +90,7 @@
         </section>
 
         <section class="card">
-          <h2 class="section-title">Team</h2>
+          <h2 class="section-title">Users</h2>
           <div id="users-table"></div>
         </section>
       </div>

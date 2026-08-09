@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Reports · FINDI</title>
+    <title>Reports · FNS Cashline</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -20,6 +20,7 @@
     <script defer src="js/supabase.js"></script>
     <script defer src="js/auth.js"></script>
     <script defer src="js/geo.js"></script>
+    <script defer src="js/atmCycle.js"></script>
     <script defer src="js/reports.js"></script>
   </head>
   <body>
@@ -29,9 +30,26 @@
       <div class="container page-grid">
         <section class="card no-print">
           <div class="toolbar">
-            <div>
-              <label for="report-month">Month</label>
-              <input id="report-month" type="month" />
+            <div class="report-controls">
+              <div class="segmented" role="tablist" aria-label="Report type">
+                <button type="button" class="segmented__btn is-active" data-report="daily" role="tab" aria-selected="true">
+                  Daily track
+                </button>
+                <button type="button" class="segmented__btn" data-report="monthly" role="tab" aria-selected="false">
+                  Monthly
+                </button>
+                <button type="button" class="segmented__btn" data-report="commission" role="tab" aria-selected="false" id="commission-tab" hidden>
+                  Commission
+                </button>
+              </div>
+              <div>
+                <label for="report-month">Month</label>
+                <input id="report-month" type="month" />
+              </div>
+              <div id="report-year-wrap" hidden>
+                <label for="report-year">Year</label>
+                <input id="report-year" type="number" min="2020" max="2100" step="1" />
+              </div>
             </div>
             <button type="button" class="btn" id="print-btn">Print</button>
           </div>
