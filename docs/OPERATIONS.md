@@ -32,6 +32,39 @@ Important:
    - GitHub → Settings → Pages → Custom domain → `fnscashline.fnsventures.in` → Enforce HTTPS
    - Staging deploys strip `CNAME` under `/staging/` only; prod keeps the root file
 
+### DNS safety net (`fnsventures.in`)
+
+This zone hosts **multiple** GitHub Pages apps. **Adding `fnscashline` must never remove sibling CNAMEs.** A deleted host can look like a missing `js/env.js` (cached HTML + uncached config).
+
+| Host (CNAME) | Target | App / repo |
+|--------------|--------|------------|
+| `bishnupriyafuels` | `fnsventures.github.io` | Station app (`petrolpump`) |
+| `fnscashline` | `fnsventures.github.io` | This app (`fns-cashline`) |
+
+**Registrar (GoDaddy):**
+
+- [ ] Account has **2FA** enabled
+- [ ] Domain / security **alerts** enabled for the account email
+- [ ] Before editing DNS: screenshot or export the DNS table
+- [ ] After editing: **add** a new row only — do not overwrite sibling hosts
+- [ ] **API auto-fix secrets** (once): create a Production key at [developer.godaddy.com/keys](https://developer.godaddy.com/keys), then add repo secrets on **both** `petrolpump` and `fns-cashline`:
+  - `GODADDY_API_KEY`
+  - `GODADDY_API_SECRET`
+
+**After any DNS change**, verify every sibling:
+
+```bash
+./scripts/check-dns-siblings.sh           # check only
+./scripts/check-dns-siblings.sh --fix     # restore missing/wrong CNAMEs via GoDaddy, then recheck
+```
+
+Or open:
+
+- `https://bishnupriyafuels.fnsventures.in/js/env.js`
+- `https://fnscashline.fnsventures.in/js/env.js`
+
+**Automated:** Actions → **Check DNS siblings** runs daily with `--fix`. Missing/wrong sibling CNAMEs are rewritten to `fnsventures.github.io` via GoDaddy when secrets are set. Auto-fix is **DNS only** — a bad `/js/env.js` still needs Actions → **Deploy** → `prod`. Keep the host list in `scripts/check-dns-siblings.sh` in sync with petrolpump when you add another site.
+
 ---
 
 ## 1. Deploy the website to staging
@@ -83,3 +116,13 @@ Run new files under `supabase/migrations/` in the SQL Editor on **staging first*
 4. **ref** *(optional)* — branch, tag, or SHA to publish
 
 Each run uses that environment’s secrets and updates **`gh-pages`** only (staging → `/staging/`; prod → root, staging folder preserved).
+
+---
+
+## Common problems
+
+| Problem | Fix |
+|---------|-----|
+| Banner: missing config / copy `env.example.js` | `./scripts/check-dns-siblings.sh --fix` (needs `GODADDY_*`); hard-refresh. If DNS OK but env bad → Deploy prod |
+| Staging shows wrong Supabase project | GitHub **staging** secrets `SUPABASE_URL` / `SUPABASE_ANON_KEY` |
+| Live site unchanged after merge | Wait for Actions **Deploy**; hard-refresh |
