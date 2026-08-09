@@ -157,6 +157,18 @@ async function initLoginPage() {
     event.preventDefault();
     if (loginError) loginError.hidden = true;
 
+    if (typeof window.isAppConfigValid === "function" && !window.isAppConfigValid()) {
+      if (loginError) {
+        loginError.textContent =
+          (typeof window.getAppConfigErrorMessage === "function"
+            ? await window.getAppConfigErrorMessage()
+            : null) ||
+          "Missing config: copy js/env.example.js to js/env.js before signing in.";
+        loginError.hidden = false;
+      }
+      return;
+    }
+
     const email = loginForm.email.value.trim();
     const password = loginForm.password.value;
 
