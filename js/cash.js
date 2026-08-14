@@ -1,4 +1,4 @@
-/* global supabaseClient, requireAuth, renderTopbar, isAdmin, formatINR, formatINRDecimal, showToast, bindReceiptPreview, clearReceiptPreview, bindLiveClock, refreshGeoStatus, escapeHtml, setButtonLoading, parseAmount, rpcErrorMessage, AMOUNT_EPS, AtmCycle, submitWithReceiptRpc, AppConfig, getReceiptSignedUrlMap, receiptLinkFromMap */
+/* global supabaseClient, requireAuth, renderTopbar, isAdmin, formatINR, formatINRDecimal, showToast, bindReceiptPreview, clearReceiptPreview, bindLiveClock, refreshGeoStatus, escapeHtml, setButtonLoading, parseAmount, rpcErrorMessage, AMOUNT_EPS, AtmCycle, submitWithReceiptRpc, AppConfig, getReceiptSignedUrlMap, receiptLinkFromMap, removeReceipt */
 
 const inquiryForm = document.getElementById("inquiry-form");
 const replenishForm = document.getElementById("replenish-form");
@@ -190,47 +190,69 @@ async function fetchHistory() {
   };
 }
 
+function adminDeleteCell(kind, id, canDelete) {
+  if (!isAdmin(pageUser)) return "";
+  if (!canDelete) return `<td data-label="Actions" class="table-actions"></td>`;
+  return `<td data-label="Actions" class="table-actions">
+    <button type="button" class="btn-delete" data-delete="${escapeHtml(kind)}" data-id="${escapeHtml(id)}">Delete</button>
+  </td>`;
+}
+
 async function renderInquiryTable(rows) {
   if (!inquiryTable) return;
   if (!rows.length) {
     inquiryTable.innerHTML = `<p class="muted">No night inquiries yet.</p>`;
     return;
   }
+  const admin = isAdmin(pageUser);
+  // History is newest-first; only the tip may be deleted (matches RPC rules).
+  const tipId = rows[0]?.id;
   const urlMap = await getReceiptSignedUrlMap(rows.map((r) => r.receipt_path));
   inquiryTable.innerHTML = `<table class="data-table"><thead><tr>
-    <th>Date &amp; location</th><th>Opening</th><th>Closing</th><th>Dispensed</th><th>Status</th><th>Slip</th>
+    <th>Date &amp; location</th><th>Opening</th><th>Closing</th><th>Dispensed</th><th>Status</th><th>Slip</th>${
+      admin ? "<th>Actions</th>" : ""
+    }
   </tr></thead><tbody>${rows
-    .map((r) => `<tr>
+    .map(
+      (r) => `<tr>
         <td data-label="Date & location">${AtmCycle.metaCellHtml(r)}</td>
         <td data-label="Opening">${formatINRDecimal(r.opening_balance)}</td>
         <td data-label="Closing">${formatINRDecimal(r.cash_left)}</td>
         <td data-label="Dispensed">${formatINRDecimal(r.dispensed)}</td>
         <td data-label="Status">${escapeHtml(AtmCycle.inquiryStatus(r))}</td>
         <td data-label="Slip">${receiptLinkFromMap(r.receipt_path, "slip", urlMap)}</td>
-      </tr>`)
+        ${adminDeleteCell("inquiry", r.id, r.id === tipId)}
+      </tr>`
+    )
     .join("")}</tbody></table>`;
 }
 
-async function renderReplenishTable(loads) {
+async function renderReplenishTable(loads, tipInquiryId) {
   if (!replenishTable) return;
   if (!loads.length) {
     replenishTable.innerHTML = `<p class="muted">No ATM loads yet.</p>`;
     return;
   }
+  const admin = isAdmin(pageUser);
   const urlMap = await getReceiptSignedUrlMap(loads.map((r) => r.atm_receipt_path));
 
   replenishTable.innerHTML = `<table class="data-table"><thead><tr>
-    <th>Date &amp; location</th><th>Amount</th><th>Reference</th><th>Receipt</th>
+    <th>Date &amp; location</th><th>Amount</th><th>Reference</th><th>Receipt</th>${
+      admin ? "<th>Actions</th>" : ""
+    }
   </tr></thead><tbody>${loads
     .map((r) => {
       const badge = AtmCycle.isAdminOverrideLoad(r)
         ? ` <span class="muted" style="font-size:0.75rem">(admin)</span>`
         : "";
+      // Linked loads: tip inquiry only. Orphan admin loads may always be removed.
+      const canDelete = !r.inquiry_id || r.inquiry_id === tipInquiryId;
       return `<tr>
         <td data-label="Date & location">${AtmCycle.metaCellHtml(r)}</td>
         <td data-label="Amount">${formatINRDecimal(r.amount)}${badge}</td>
         <td data-label="Reference">${escapeHtml(r.reference || "—")}</td>
         <td data-label="Receipt">${receiptLinkFromMap(r.atm_receipt_path, "receipt", urlMap)}</td>
+        ${adminDeleteCell("load", r.id, canDelete)}
       </tr>`;
     })
     .join("")}</tbody></table>`;
@@ -242,10 +264,58 @@ async function refreshAll() {
     showToast(history.error.message, "error");
     return;
   }
+  const tipInquiryId = history.inquiries[0]?.id || null;
   await Promise.all([
     renderInquiryTable(history.inquiries),
-    renderReplenishTable(history.loads),
+    renderReplenishTable(history.loads, tipInquiryId),
   ]);
+}
+
+async function cleanupReceiptPaths(...paths) {
+  await Promise.all(paths.filter(Boolean).map((path) => removeReceipt(path)));
+}
+
+async function handleAdminDelete(event) {
+  const button = event.target.closest("[data-delete][data-id]");
+  if (!button || !isAdmin(pageUser) || saving) return;
+
+  const kind = button.dataset.delete;
+  const id = button.dataset.id;
+  const rpcs = AppConfig.ATM_RPCS;
+
+  let confirmMsg;
+  let rpcName;
+  if (kind === "inquiry") {
+    confirmMsg =
+      "Delete this night inquiry?\n\nIf an ATM load is linked, it will be deleted too. This cannot be undone.";
+    rpcName = rpcs.DELETE_INQUIRY;
+  } else if (kind === "load") {
+    confirmMsg =
+      "Delete this ATM load?\n\nIf it closed a night inquiry, that inquiry will reopen so you can load again. This cannot be undone.";
+    rpcName = rpcs.DELETE_LOAD;
+  } else {
+    return;
+  }
+
+  if (!window.confirm(confirmMsg)) return;
+
+  saving = true;
+  button.disabled = true;
+  try {
+    const { data, error } = await supabaseClient.rpc(rpcName, { p_id: id });
+    if (error) throw error;
+
+    // Storage cleanup is best-effort; DB delete already succeeded.
+    await cleanupReceiptPaths(data?.receipt_path, data?.atm_receipt_path);
+    showToast(kind === "inquiry" ? "Night inquiry deleted." : "ATM load deleted.", "success");
+    if (loadAmountInput) delete loadAmountInput.dataset.touched;
+    await refreshAll();
+  } catch (err) {
+    showToast(rpcErrorMessage(err), "error");
+    button.disabled = false;
+  } finally {
+    saving = false;
+  }
 }
 
 async function handleInquirySubmit(event) {
@@ -435,6 +505,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   geoRefreshBtn?.addEventListener("click", () => refreshGeoStatus(geoStatus, geoState));
   inquiryForm?.addEventListener("submit", handleInquirySubmit);
   replenishForm?.addEventListener("submit", handleReplenishSubmit);
+  inquiryTable?.addEventListener("click", handleAdminDelete);
+  replenishTable?.addEventListener("click", handleAdminDelete);
 
   await Promise.all([refreshGeoStatus(geoStatus, geoState), refreshAll()]);
 });

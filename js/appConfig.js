@@ -26,6 +26,8 @@
   const ATM_RPCS = {
     INQUIRY: "record_atm_inquiry",
     LOAD: "record_replenish",
+    DELETE_INQUIRY: "admin_delete_atm_inquiry",
+    DELETE_LOAD: "admin_delete_cash_load",
   };
 
   const RECEIPT_KINDS = {

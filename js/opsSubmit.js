@@ -14,6 +14,7 @@
   }) {
     global.setButtonLoading(button, true, uploadLabel);
     let uploadedPath = null;
+    let restored = false;
 
     try {
       uploadedPath = await global.uploadReceipt(receiptFile, receiptKind);
@@ -23,13 +24,17 @@
       const { error } = await global.supabaseClient.rpc(rpcName, payload);
       if (error) throw error;
 
+      // Restore before onSuccess so applyCycleUi can lock/disable without being undone.
+      global.setButtonLoading(button, false);
+      restored = true;
+
       if (typeof onSuccess === "function") await onSuccess(uploadedPath);
       return { ok: true, path: uploadedPath };
     } catch (err) {
       if (uploadedPath) await global.removeReceipt(uploadedPath);
       throw err;
     } finally {
-      global.setButtonLoading(button, false);
+      if (!restored) global.setButtonLoading(button, false);
     }
   }
 

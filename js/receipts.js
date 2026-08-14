@@ -88,7 +88,8 @@ async function uploadReceipt(file, kind) {
 async function removeReceipt(path) {
   if (!path || path.startsWith("migrated/")) return;
   try {
-    await supabaseClient.storage.from(RECEIPT_BUCKET).remove([path]);
+    const { error } = await supabaseClient.storage.from(RECEIPT_BUCKET).remove([path]);
+    if (error) console.warn("Could not remove orphan receipt", error);
   } catch (err) {
     console.warn("Could not remove orphan receipt", err);
   }
