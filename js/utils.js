@@ -100,12 +100,17 @@ function showToast(message, type = "info") {
 function setButtonLoading(button, loading, label = "Please wait…") {
   if (!button) return;
   if (loading) {
-    button.dataset.originalText = button.textContent;
+    // Keep the first label so Uploading… → Saving… does not overwrite restore text.
+    if (button.dataset.originalText == null) {
+      button.dataset.originalText = button.textContent;
+    }
     button.disabled = true;
     button.textContent = label;
   } else {
+    const original = button.dataset.originalText;
+    delete button.dataset.originalText;
     button.disabled = false;
-    button.textContent = button.dataset.originalText || button.textContent;
+    if (original != null) button.textContent = original;
   }
 }
 
