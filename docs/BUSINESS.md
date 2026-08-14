@@ -96,4 +96,4 @@ Enter settlements as `txns × rate − TDS`. Not inferred from inquiries.
 
 ## 6. Receipts, time, location
 
-Every inquiry and replenish is audit-ready: photo, server timestamp, GPS. Operators cannot edit or delete past rows.
+Every inquiry and replenish is audit-ready: photo, server timestamp, GPS. Operators cannot edit or delete past rows. Admins can delete mistaken night inquiries or ATM loads from the Cash history tables (deleting a load reopens its night inquiry).

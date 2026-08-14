@@ -451,6 +451,30 @@
   display: none !important;
 }
 
+.table-actions {
+  white-space: nowrap;
+}
+
+button.btn-delete {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+  border-radius: 8px;
+  border: 1px solid var(--findi-red-soft-border);
+  background: var(--findi-red-soft);
+  color: var(--color-danger-ink);
+  cursor: pointer;
+}
+
+button.btn-delete:hover:not(:disabled) {
+  background: #fecdd3;
+}
+
+button.btn-delete:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
   .cycle-status-grid {
     grid-template-columns: 1fr;

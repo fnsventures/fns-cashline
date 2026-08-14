@@ -62,6 +62,7 @@ No build step. Pages load Supabase JS from CDN and app scripts with `defer`.
      | 10 | `supabase/migrations/20260808191000_atm_cycle_bugfixes.sql` | Balance / FOUND / helper lockdown |
      | 11 | `supabase/migrations/20260808192000_grant_current_atm_balance.sql` | Grant `_current_atm_balance` for `v_atm_summary` |
      | 12 | `supabase/migrations/20260808193000_atm_cycle_hardening.sql` | Concurrent load lock, admin force rules, override tags |
+     | 13 | `supabase/migrations/20260814100000_admin_delete_atm_entries.sql` | Admin delete night inquiry / ATM load RPCs |
 
    After upgrades, the live schema should match `schema.sql` (inquiry → ATM load cycle).
 
@@ -74,7 +75,7 @@ No build step. Pages load Supabase JS from CDN and app scripts with `defer`.
 | Night inquiry | Cash left ≤ opening; dispensed = opening − left; one open cycle; one inquiry per IST day |
 | Morning ATM load | Amount locked to night dispensed (admins may override); ATM receipt required |
 | Writes | Only via `record_atm_inquiry` / `record_replenish` RPCs |
-| Edits | Operators cannot update/delete past entries |
+| Edits | Operators cannot update/delete past entries; admins may delete via Cash history |
 
 Set station GPS under **Users → Capital & geofence** (“Use my current location”).
 
@@ -286,6 +287,7 @@ total_commission_*  = commission rollups
 ```
 
 Active write RPCs: `record_atm_inquiry`, `record_replenish` (optional `p_amount`, `p_force` for admins).
+Admin delete RPCs: `admin_delete_atm_inquiry`, `admin_delete_cash_load` (tip of inquiry chain only; deleting a load reopens its linked inquiry).
 
 Shared helpers: `_validate_*`, `_current_atm_balance`, `_atm_opening_balance`, `_open_inquiry`, `_insert_cash_load`.
 ---
