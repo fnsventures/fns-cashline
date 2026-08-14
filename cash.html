@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cash · FiNDi ATM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap"
+    />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script defer src="js/env.js"></script>
+    <script defer src="js/utils.js"></script>
+    <script defer src="js/brand.js"></script>
+    <script defer src="js/appConfig.js"></script>
+    <script defer src="js/supabase.js"></script>
+    <script defer src="js/auth.js"></script>
+    <script defer src="js/receipts.js"></script>
+    <script defer src="js/geo.js"></script>
+    <script defer src="js/cash.js"></script>
+  </head>
+  <body>
+    <header id="app-topbar" class="no-print"></header>
+
+    <main class="page">
+      <div class="container page-grid">
+        <section class="flow-steps">
+          <strong>Bank CC → ATM load</strong>
+          <ol>
+            <li><strong>Bank draw</strong> — take cash from the bank CC; photo of bank receipt.</li>
+            <li><strong>ATM load</strong> — load that cash into the FiNDi machine; photo of ATM receipt.</li>
+          </ol>
+          <p class="muted" style="margin: 0.5rem 0 0; font-size: 0.85rem">
+            Time is locked by the server. GPS is required. Receipt photo is required.
+            Operators cannot edit or delete past entries.
+          </p>
+          <p class="muted" style="margin: 0.35rem 0 0; font-size: 0.85rem">
+            Pending to load into ATM: <strong id="pending-hint">—</strong>
+          </p>
+          <p id="geo-status" class="geo-status">Capturing location…</p>
+          <button type="button" class="btn btn--ghost btn--sm" id="geo-refresh">Refresh location</button>
+        </section>
+
+        <div class="split-grid">
+          <section class="card">
+            <h2 class="section-title">Bank draw</h2>
+            <p class="muted" style="margin-top: 0">Cash taken from bank CC.</p>
+            <form id="bank-form" class="form">
+              <div class="capture-meta">
+                <span>Time (auto)</span>
+                <strong id="bank-clock">—</strong>
+              </div>
+              <div>
+                <label for="bank_amount">Amount (₹)</label>
+                <input id="bank_amount" name="amount" type="number" min="1" step="0.01" inputmode="decimal" required />
+              </div>
+              <label for="bank_reference">Reference</label>
+              <input id="bank_reference" name="reference" type="text" placeholder="Optional UTR / slip no." />
+
+              <div class="receipt-field">
+                <label for="bank_receipt">Bank receipt photo (required)</label>
+                <input
+                  id="bank_receipt"
+                  name="bank_receipt"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  required
+                />
+                <img id="bank_receipt_preview" class="receipt-preview" alt="Bank receipt preview" hidden />
+              </div>
+
+              <button type="submit">Save bank draw</button>
+            </form>
+          </section>
+
+          <section class="card">
+            <h2 class="section-title">ATM load</h2>
+            <p class="muted" style="margin-top: 0">Cash loaded into the FiNDi ATM.</p>
+            <form id="load-form" class="form">
+              <div class="capture-meta">
+                <span>Time (auto)</span>
+                <strong id="atm-clock">—</strong>
+              </div>
+              <div>
+                <label for="atm_amount">Amount (₹)</label>
+                <input id="atm_amount" name="amount" type="number" min="1" step="0.01" inputmode="decimal" required />
+              </div>
+              <label for="atm_reference">Reference</label>
+              <input id="atm_reference" name="reference" type="text" placeholder="Optional" />
+
+              <div class="receipt-field">
+                <label for="atm_receipt">ATM load receipt photo (required)</label>
+                <input
+                  id="atm_receipt"
+                  name="atm_receipt"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  required
+                />
+                <img id="atm_receipt_preview" class="receipt-preview" alt="ATM receipt preview" hidden />
+              </div>
+
+              <button type="submit">Save ATM load</button>
+            </form>
+          </section>
+        </div>
+
+        <section class="card">
+          <h2 class="section-title">Recent bank draws</h2>
+          <div id="bank-table"></div>
+        </section>
+
+        <section class="card">
+          <h2 class="section-title">Recent ATM loads</h2>
+          <div id="loads-table"></div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

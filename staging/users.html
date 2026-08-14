@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Settings · FNS Cashline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap"
+    />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script defer src="js/env.js"></script>
+    <script defer src="js/utils.js"></script>
+    <script defer src="js/brand.js"></script>
+    <script defer src="js/appConfig.js"></script>
+    <script defer src="js/supabase.js"></script>
+    <script defer src="js/auth.js"></script>
+    <script defer src="js/geo.js"></script>
+    <script defer src="js/users.js"></script>
+  </head>
+  <body>
+    <header id="app-topbar" class="no-print"></header>
+
+    <main class="page">
+      <div class="container page-grid">
+        <section class="card">
+          <h2 class="section-title">Station settings</h2>
+          <p class="muted" style="margin-top: 0">
+            Set total capital and the station geofence. Operators can save records only within the allowed radius.
+          </p>
+          <form id="capital-form" class="form">
+            <div class="form-grid">
+              <div>
+                <label for="total_capital">Total capital (₹)</label>
+                <input id="total_capital" name="total_capital" type="number" min="0" step="1" inputmode="decimal" required />
+              </div>
+              <div>
+                <label for="geo_lat">Station latitude</label>
+                <input id="geo_lat" name="geo_lat" type="number" step="any" placeholder="e.g. 19.3145" />
+              </div>
+              <div>
+                <label for="geo_lng">Station longitude</label>
+                <input id="geo_lng" name="geo_lng" type="number" step="any" placeholder="e.g. 84.7945" />
+              </div>
+              <div>
+                <label for="geo_radius">Allowed radius (metres)</label>
+                <input id="geo_radius" name="geo_radius" type="number" min="50" step="1" value="3000" />
+              </div>
+            </div>
+            <label class="check-row">
+              <input id="geo_require" name="geo_require" type="checkbox" checked />
+              Require GPS for night inquiry and ATM load
+            </label>
+            <div class="toolbar">
+              <button type="button" class="btn btn--ghost" id="use-my-location-btn">Use current location</button>
+              <button type="submit">Save settings</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2 class="section-title">Add user</h2>
+          <p class="muted" style="margin-top: 0">
+            Create the login in Supabase → Authentication → Users, then provision the role here.
+          </p>
+          <form id="user-form" class="form">
+            <div class="form-grid">
+              <div>
+                <label for="user_email">Email</label>
+                <input id="user_email" name="email" type="email" required placeholder="operator@example.com" />
+              </div>
+              <div>
+                <label for="display_name">Display name</label>
+                <input id="display_name" name="display_name" type="text" placeholder="Optional" />
+              </div>
+              <div>
+                <label for="user_role">Role</label>
+                <select id="user_role" name="role">
+                  <option value="operator">Operator</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit">Add user</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2 class="section-title">Users</h2>
+          <div id="users-table"></div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

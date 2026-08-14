@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard · FNS Cashline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap"
+    />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script defer src="js/env.js"></script>
+    <script defer src="js/utils.js"></script>
+    <script defer src="js/brand.js"></script>
+    <script defer src="js/appConfig.js"></script>
+    <script defer src="js/supabase.js"></script>
+    <script defer src="js/auth.js"></script>
+    <script defer src="js/atmCycle.js"></script>
+    <script defer src="js/dashboard.js"></script>
+  </head>
+  <body>
+    <header id="app-topbar" class="no-print"></header>
+
+    <main class="page">
+      <div class="container page-grid dash-page">
+        <p class="dash-site-line" id="dash-site-line">FiNDi ATM · Inquiry &amp; load desk</p>
+
+        <section class="float-hero" id="dash-hero" aria-labelledby="pending-heading">
+          <div class="float-hero-top">
+            <div>
+              <p class="float-hero-label" id="pending-heading">Pending to load into ATM</p>
+              <p class="hero-amount" id="kpi-pending">—</p>
+            </div>
+            <span class="float-hero-badge" aria-hidden="true">ATM</span>
+          </div>
+
+          <div class="float-meta">
+            <div class="float-meta-item">
+              <span>Total capital</span>
+              <strong id="kpi-capital">—</strong>
+            </div>
+            <div class="float-meta-item">
+              <span>Cash in ATM</span>
+              <strong id="kpi-in-atm">—</strong>
+            </div>
+            <div class="float-meta-item">
+              <span>Trading account</span>
+              <strong id="kpi-trading">—</strong>
+            </div>
+          </div>
+
+          <div class="float-action" id="float-action">
+            <div>
+              <span class="float-action-label" id="action-detail">Customer withdrawals due into the machine</span>
+              <strong class="float-action-amount" id="action-amount">—</strong>
+            </div>
+            <a class="btn btn--accent" id="action-cta" href="cash.html">Record load</a>
+          </div>
+        </section>
+
+        <p class="dash-admin" id="admin-line" hidden>
+          Commissions <strong id="kpi-commission">—</strong>
+          <a href="commissions.html">View →</a>
+        </p>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Commission · FiNDi ATM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap"
+    />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script defer src="js/env.js"></script>
+    <script defer src="js/utils.js"></script>
+    <script defer src="js/brand.js"></script>
+    <script defer src="js/appConfig.js"></script>
+    <script defer src="js/supabase.js"></script>
+    <script defer src="js/auth.js"></script>
+    <script defer src="js/commissions.js"></script>
+  </head>
+  <body>
+    <header id="app-topbar" class="no-print"></header>
+
+    <main class="page">
+      <div class="container page-grid">
+        <section class="card">
+          <h2 class="section-title">Commission (admin)</h2>
+          <p class="muted" style="margin-top: 0">
+            Direct calculation: <strong>transactions × rate per txn = commission</strong>. Operators cannot see this.
+          </p>
+          <form id="commission-form" class="form">
+            <div class="form-grid">
+              <div>
+                <label for="period_start">From</label>
+                <input id="period_start" name="period_start" type="date" required />
+              </div>
+              <div>
+                <label for="period_end">To</label>
+                <input id="period_end" name="period_end" type="date" required />
+              </div>
+              <div>
+                <label for="paid_on">Paid on</label>
+                <input id="paid_on" name="paid_on" type="date" />
+              </div>
+            </div>
+            <div class="form-grid">
+              <div>
+                <label for="transaction_count">Transactions</label>
+                <input id="transaction_count" name="transaction_count" type="number" min="0" step="1" value="0" required />
+              </div>
+              <div>
+                <label for="rate_per_txn">Rate per txn (₹)</label>
+                <input id="rate_per_txn" name="rate_per_txn" type="number" min="0" step="0.01" value="0" required />
+              </div>
+              <div>
+                <label for="tds">TDS (₹) — optional</label>
+                <input id="tds" name="tds" type="number" min="0" step="0.01" value="0" />
+              </div>
+            </div>
+
+            <div class="calc-box" aria-live="polite">
+              <span>Commission (auto)</span>
+              <strong id="commission-preview">₹0</strong>
+              <span id="commission-preview-detail" class="muted">0 txn × ₹0 − TDS ₹0</span>
+            </div>
+
+            <label for="commission_reference">Reference</label>
+            <input id="commission_reference" name="reference" type="text" placeholder="Settlement / UTR ID" />
+            <label for="commission_notes">Notes</label>
+            <textarea id="commission_notes" name="notes" rows="2" placeholder="Optional"></textarea>
+            <button type="submit">Save commission</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2 class="section-title">History</h2>
+          <div id="commission-table"></div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cash desk · FNS Cashline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap"
+    />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script defer src="js/env.js"></script>
+    <script defer src="js/utils.js"></script>
+    <script defer src="js/brand.js"></script>
+    <script defer src="js/appConfig.js"></script>
+    <script defer src="js/supabase.js"></script>
+    <script defer src="js/auth.js"></script>
+    <script defer src="js/receipts.js"></script>
+    <script defer src="js/geo.js"></script>
+    <script defer src="js/atmCycle.js"></script>
+    <script defer src="js/opsSubmit.js"></script>
+    <script defer src="js/cash.js"></script>
+  </head>
+  <body>
+    <header id="app-topbar" class="no-print"></header>
+
+    <main class="page">
+      <div class="container page-grid">
+        <section class="flow-steps">
+          <strong>Night inquiry → ATM load</strong>
+          <ol>
+            <li><strong>Night</strong> — record ATM inquiry (closing balance + inquiry slip).</li>
+            <li><strong>Morning</strong> — load the dispensed amount into the ATM (load receipt).</li>
+          </ol>
+          <p class="muted" style="margin: 0.5rem 0 0; font-size: 0.85rem">
+            Dispensed = opening balance − closing balance. Load amount is locked for operators.
+            Admins can override the load amount on an open inquiry, or top up without an inquiry when cash in ATM is below capital.
+          </p>
+          <p id="geo-status" class="geo-status">Capturing location…</p>
+          <button type="button" class="btn btn--ghost btn--sm" id="geo-refresh">Refresh location</button>
+        </section>
+
+        <section class="cycle-status" id="cycle-status" aria-live="polite">
+          <div class="cycle-status-grid">
+            <div>
+              <span>Cash in ATM</span>
+              <strong id="kpi-cash-in-atm">—</strong>
+            </div>
+            <div>
+              <span>Pending to load</span>
+              <strong id="kpi-pending-replenish">—</strong>
+            </div>
+            <div>
+              <span>Status</span>
+              <strong id="kpi-cycle-state">—</strong>
+            </div>
+          </div>
+          <p class="muted cycle-detail" id="cycle-detail"></p>
+        </section>
+
+        <div class="split-grid">
+          <section class="card" id="inquiry-card">
+            <h2 class="section-title">Night inquiry</h2>
+            <p class="muted" style="margin-top: 0">Closing balance remaining in the ATM after customer withdrawals.</p>
+            <form id="inquiry-form" class="form">
+              <div class="capture-meta">
+                <span>Time (auto)</span>
+                <strong id="inquiry-clock">—</strong>
+              </div>
+              <div class="calc-box" id="opening-box">
+                <span>Opening balance</span>
+                <strong id="kpi-opening">—</strong>
+              </div>
+              <div>
+                <label for="cash_left">Closing balance (₹)</label>
+                <input id="cash_left" name="cash_left" type="number" min="0" step="0.01" inputmode="decimal" required />
+              </div>
+              <div class="calc-box">
+                <span>Dispensed (auto)</span>
+                <strong id="kpi-dispensed-preview">—</strong>
+              </div>
+              <label for="inquiry_reference">Reference</label>
+              <input id="inquiry_reference" name="reference" type="text" placeholder="Optional slip number" />
+
+              <div class="receipt-field">
+                <label for="inquiry_receipt">Inquiry slip (required)</label>
+                <input
+                  id="inquiry_receipt"
+                  name="inquiry_receipt"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  required
+                />
+                <img id="inquiry_receipt_preview" class="receipt-preview" alt="Inquiry slip preview" hidden />
+              </div>
+
+              <button type="submit">Save night inquiry</button>
+            </form>
+          </section>
+
+          <section class="card" id="replenish-card">
+            <h2 class="section-title">ATM load</h2>
+            <p class="muted" style="margin-top: 0" id="replenish-help">
+              Load cash into the ATM. Amount is locked to the open night inquiry.
+            </p>
+            <p class="admin-note" id="admin-load-note" hidden>
+              Admin override: edit the amount on an open inquiry, or top up when cash in ATM is below capital.
+            </p>
+            <form id="replenish-form" class="form">
+              <div class="capture-meta">
+                <span>Time (auto)</span>
+                <strong id="replenish-clock">—</strong>
+              </div>
+              <div class="calc-box calc-box--accent" id="locked-amount-box">
+                <span>Amount to load</span>
+                <strong id="kpi-replenish-amount">—</strong>
+              </div>
+              <div id="admin-amount-wrap" hidden>
+                <label for="load_amount">Amount to load (₹)</label>
+                <input id="load_amount" name="load_amount" type="number" min="1" step="0.01" inputmode="decimal" />
+              </div>
+              <label for="replenish_reference">Reference</label>
+              <input id="replenish_reference" name="reference" type="text" placeholder="Optional slip number" />
+
+              <div class="receipt-field">
+                <label for="atm_receipt">ATM load receipt (required)</label>
+                <input
+                  id="atm_receipt"
+                  name="atm_receipt"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  required
+                />
+                <img id="atm_receipt_preview" class="receipt-preview" alt="ATM receipt preview" hidden />
+              </div>
+
+              <button type="submit" id="replenish-submit">Save ATM load</button>
+            </form>
+          </section>
+        </div>
+
+        <section class="card">
+          <h2 class="section-title">Recent night inquiries</h2>
+          <div id="inquiry-table"></div>
+        </section>
+
+        <section class="card">
+          <h2 class="section-title">Recent ATM loads</h2>
+          <div id="replenish-table"></div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
